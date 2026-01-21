@@ -1,0 +1,57 @@
+pipeline {
+    agent { label 'awslinuxgit' }
+
+    options {
+        timestamps()
+    }
+
+    tools {
+        maven 'Maven3'
+        jdk 'openjdk21'
+    }
+
+    environment {
+        GIT_REPO = 'https://github.com/veerbasanna/opsskills-pipelinee2e-java.git'
+        BRANCH   = 'main'
+        PATH = "${env.JAVA_HOME}/bin:${env.MAVEN_HOME}/bin:${env.PATH}"
+    }
+
+    stages {
+
+        stage('Checkout repo') {
+            steps {
+                git branch: "${BRANCH}",
+                    url: "${GIT_REPO}",
+                    credentialsId: '85833247-5a5e-4217-af37-e4b6332f6f97'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Running Maven build...'
+                sh '''
+                    cd maven
+                    mvn clean package
+                '''
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                sh '''
+                    cd maven
+                    mvn test
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: 'maven/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+    }   // <-- closes stages
+
+}       // <-- closes pipeline
+
